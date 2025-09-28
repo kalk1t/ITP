@@ -1,0 +1,90 @@
+# ============================
+# Visual Studio C++ Project
+# ============================
+
+# Build directories
+[Bb]uild/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+[Bb]in/
+[Oo]bj/
+out/
+ipch/
+
+# IDE folders
+.vs/
+.vscode/
+
+# Visual Studio generated files
+*.sdf
+*.opensdf
+*.cachefile
+*.VC.db
+*.VC.opendb
+*.log
+*.tlog
+*.lastbuildstate
+*.idb
+*.pdb
+*.ilk
+
+# User-specific files
+*.user
+*.suo
+*.userosscache
+*.VC.db
+*.VC.opendb
+*.ncb
+
+# Backup / temp files
+*.tmp
+*.temp
+*.bak
+*.old
+*.log
+*.~*
+*.db
+*.opendb
+
+# Auto-generated resource or intermediate files
+*.res
+*.pch
+
+# Windows thumbnail cache
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ============================
+# Project-specific exclusions
+# ============================
+
+# Do NOT ignore source / headers / assets
+!*.cpp
+!*.h
+!*.ico
+!*.rc
+!*.sln
+!*.vcxproj
+!*.vcxproj.filters
+!*.bmp
+
+# ============================
+# OS-specific
+# ============================
+
+# macOS
+.DS_Store
+
+# Linux
+*.swp
+*~
+
+# ============================
+# End
+# ============================
+
