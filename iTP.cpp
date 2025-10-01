@@ -1,11 +1,11 @@
-// iTP.cpp : Defines the entry point for the application.
+﻿// iTP.cpp : Defines the entry point for the application.
 //
 
 #include "framework.h"
 #include "iTP.h"
 
 #include "functions.h"
-
+#include "notes.h"
 
 
 #define MAX_LOADSTRING 100
@@ -142,28 +142,86 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 //
 //
 
-// Pale popup WndProc
 static LRESULT CALLBACK Notes_WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     switch (msg) {
-    case WM_CREATE:
-         pale_brush = CreateSolidBrush(RGB(0, 0, 0)); 
-         break;
+    case WM_CREATE: {
+        // Controls
+        int pad = 12, listW = 220, btnW = 80, btnH = 28;
+        RECT rc; GetClientRect(hWnd, &rc); int W = rc.right, H = rc.bottom;
 
-    case WM_ERASEBKGND: {  
-        HDC hdc = (HDC)wParam;
-        RECT rc; GetClientRect(hWnd, &rc);
-        FillRect(hdc, &rc, pale_brush);
+        gList = CreateWindowW(L"LISTBOX", L"", WS_CHILD | WS_VISIBLE | LBS_NOTIFY | WS_BORDER,
+            pad, pad, listW, H - pad * 2 - btnH - 6, hWnd, (HMENU)ID_NOTES_LIST, GetModuleHandle(NULL), NULL);
+        gEdit = CreateWindowW(L"EDIT", L"", WS_CHILD | WS_VISIBLE | WS_BORDER | ES_LEFT | ES_MULTILINE | ES_AUTOVSCROLL | WS_VSCROLL,
+            pad + listW + pad, pad, W - (listW + pad * 3), H - pad * 2 - btnH - 6, hWnd, (HMENU)ID_NOTES_EDIT, GetModuleHandle(NULL), NULL);
+
+        gNew = CreateWindowW(L"BUTTON", L"New", WS_CHILD | WS_VISIBLE, pad, H - pad - btnH, btnW, btnH, hWnd, (HMENU)ID_NOTES_NEW, NULL, NULL);
+        gSave = CreateWindowW(L"BUTTON", L"Save", WS_CHILD | WS_VISIBLE, pad + (btnW + 8), H - pad - btnH, btnW, btnH, hWnd, (HMENU)ID_NOTES_SAVE, NULL, NULL);
+        gDel = CreateWindowW(L"BUTTON", L"Delete", WS_CHILD | WS_VISIBLE, pad + (btnW + 8) * 2, H - pad - btnH, btnW, btnH, hWnd, (HMENU)ID_NOTES_DELETE, NULL, NULL);
+        gClose = CreateWindowW(L"BUTTON", L"Close", WS_CHILD | WS_VISIBLE, W - pad - btnW, H - pad - btnH, btnW, btnH, hWnd, (HMENU)ID_NOTES_CLOSE, NULL, NULL);
+
+        Notes_LoadFromFile();
+        Notes_RefreshList();
+        return 0;
+    }
+
+    case WM_SIZE: {
+        int pad = 12, listW = 220, btnW = 80, btnH = 28;
+        int W = LOWORD(lParam), H = HIWORD(lParam);
+        MoveWindow(gList, pad, pad, listW, H - pad * 2 - btnH - 6, TRUE);
+        MoveWindow(gEdit, pad + listW + pad, pad, W - (listW + pad * 3), H - pad * 2 - btnH - 6, TRUE);
+        MoveWindow(gNew, pad, H - pad - btnH, btnW, btnH, TRUE);
+        MoveWindow(gSave, pad + (btnW + 8), H - pad - btnH, btnW, btnH, TRUE);
+        MoveWindow(gDel, pad + (btnW + 8) * 2, H - pad - btnH, btnW, btnH, TRUE);
+        MoveWindow(gClose, W - pad - btnW, H - pad - btnH, btnW, btnH, TRUE);
+        return 0;
+    }
+
+    case WM_COMMAND: {
+        WORD id = LOWORD(wParam), code = HIWORD(wParam);
+        if (id == ID_NOTES_LIST && code == LBN_SELCHANGE) {
+            int sel = (int)SendMessageW(gList, LB_GETCURSEL, 0, 0);
+            if (sel != LB_ERR) {
+                int real = (int)SendMessageW(gList, LB_GETITEMDATA, sel, 0);
+                Notes_LoadIntoUI(real);
+            }
+            return 0;
+        }
+        if (id == ID_NOTES_NEW) {
+            int slot = Notes_FirstFree();
+            if (slot >= 0) {
+                gNotes[slot].used = TRUE; wcscpy_s(gNotes[slot].title, L"(untitled)"); gNotes[slot].body[0] = 0;
+                Notes_SaveToFile(); Notes_RefreshList();
+                int cnt = (int)SendMessageW(gList, LB_GETCOUNT, 0, 0);
+                for (int i = 0; i < cnt; i++) if ((int)SendMessageW(gList, LB_GETITEMDATA, i, 0) == slot) { SendMessageW(gList, LB_SETCURSEL, i, 0); break; }
+                Notes_LoadIntoUI(slot); SetFocus(gEdit);
+            }
+            return 0;
+        }
+        if (id == ID_NOTES_SAVE) { Notes_SaveCurrentFromUI(); return 0; }
+        if (id == ID_NOTES_DELETE) {
+            if (gCurrent >= 0) { gNotes[gCurrent].used = FALSE; gNotes[gCurrent].title[0] = 0; gNotes[gCurrent].body[0] = 0; gCurrent = -1; SetWindowTextW(gEdit, L""); Notes_SaveToFile(); Notes_RefreshList(); }
+            return 0;
+        }
+        if (id == ID_NOTES_CLOSE) { ShowWindow(hWnd, SW_HIDE); return 0; }
         break;
     }
 
-    case WM_CLOSE:
-        ShowWindow(hWnd, SW_HIDE);  // hide instead of destroy (fast reopen)
-        return 0;
-
-    case WM_DESTROY:
-        return 0;
+    case WM_CTLCOLORSTATIC:
+    case WM_CTLCOLORBTN:
+    case WM_CTLCOLOREDIT:
+    case WM_CTLCOLORLISTBOX: {
+        HDC hdc = (HDC)wParam;
+        // SetBkColor(hdc, RGB(...));
+        // return your brush handle:
+        return (LRESULT)pale_brush;         // ✅ must return a brush for *CTLCOLOR* messages
     }
-    return DefWindowProc(hWnd, msg, wParam, lParam);
+
+
+
+    case WM_CLOSE: ShowWindow(hWnd, SW_HIDE); return 0;
+
+    default: return DefWindowProc(hWnd, msg, wParam, lParam);
+    }
 }
 
 static void ShowNotesPopup(HWND parent) {

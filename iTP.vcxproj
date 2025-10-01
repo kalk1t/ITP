@@ -126,6 +126,7 @@
     <ClInclude Include="framework.h" />
     <ClInclude Include="functions.h" />
     <ClInclude Include="iTP.h" />
+    <ClInclude Include="notes.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
